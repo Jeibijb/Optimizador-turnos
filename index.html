@@ -1,0 +1,390 @@
+HTML weno:
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificación de Turnos Clínicos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:14px}
+.topbar{background:#185FA5;color:#fff;padding:14px 24px;font-size:16px;font-weight:500;display:flex;align-items:center;gap:10px}
+.topbar span{font-size:13px;opacity:.8;font-weight:400}
+.container{max-width:1100px;margin:0 auto;padding:24px 16px}
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid #ddd;padding-bottom:0}
+.tab{padding:8px 18px;border-radius:6px 6px 0 0;font-size:13px;cursor:pointer;border:1px solid transparent;background:transparent;color:#555;position:relative;bottom:-1px}
+.tab.active{background:#fff;border-color:#ddd;border-bottom-color:#fff;color:#185FA5;font-weight:500}
+.tab:hover:not(.active){background:#e8f0fb;color:#185FA5}
+.panel{display:none;background:#fff;border:1px solid #ddd;border-radius:0 8px 8px 8px;padding:20px}
+.panel.active{display:block}
+h2{font-size:15px;font-weight:600;margin-bottom:14px;color:#1a1a1a}
+h3{font-size:13px;font-weight:600;color:#555;margin-bottom:8px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+label{font-size:12px;color:#555;display:block;margin-bottom:4px;font-weight:500}
+input[type=text],input[type=number],select{width:100%;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;color:#1a1a1a;background:#fff}
+input:focus,select:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.btn{padding:7px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #ccc;background:#fff;color:#1a1a1a;transition:background .15s}
+.btn:hover{background:#f0f0f0}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0c447c}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-danger{background:#fff0f0;color:#c0392b;border-color:#f5c6c6}
+.btn-danger:hover{background:#fde8e8}
+.form-box{background:#f8f9fa;border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:12px}
+.item-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f9fa;border:1px solid #e8e8e8;border-radius:6px;margin-bottom:6px}
+.item-row .name{font-weight:600;font-size:13px;flex:1;min-width:60px}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;white-space:nowrap}
+.b-senior{background:#dbeafe;color:#1e40af}
+.b-intermedio{background:#dcfce7;color:#166534}
+.b-junior{background:#fef9c3;color:#854d0e}
+.b-largo{background:#ede9fe;color:#5b21b6}
+.b-noche{background:#1e293b;color:#93c5fd}
+.b-dia{background:#dcfce7;color:#166534}
+.b-otro{background:#f1f5f9;color:#475569}
+.empty{text-align:center;color:#999;padding:20px;font-size:13px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.toggle-row:last-child{border:none}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#185FA5}
+.run-bar{display:flex;align-items:center;gap:12px;padding:16px 0;flex-wrap:wrap}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:14px}
+.alert-error{background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6}
+.alert-success{background:#f0fff4;color:#166534;border:1px solid #bbf7d0}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:#f0f4ff;border-radius:8px;padding:10px 16px;flex:1;min-width:90px;text-align:center}
+.stat .val{font-size:22px;font-weight:700;color:#185FA5}
+.stat .lbl{font-size:11px;color:#555;margin-top:2px}
+.cal-wrap{overflow-x:auto;border:1px solid #e0e0e0;border-radius:8px}
+table.cal{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+table.cal th{padding:8px 10px;text-align:center;background:#f0f4ff;font-weight:600;border-bottom:1px solid #ddd;font-size:11px;color:#185FA5}
+table.cal th.name-col{text-align:left;color:#555}
+table.cal td{padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:center;vertical-align:middle}
+table.cal td.name-col{text-align:left;font-weight:600;white-space:nowrap}
+table.cal tr:last-child td{border-bottom:none}
+table.cal tr:hover td{background:#fafbff}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500}
+.pill-largo{background:#ede9fe;color:#5b21b6}
+.pill-noche{background:#1e293b;color:#93c5fd}
+.pill-dia{background:#dcfce7;color:#166534}
+.pill-otro{background:#f1f5f9;color:#475569}
+.libre{color:#bbb;font-size:11px}
+.weekend{background:#fffbeb !important}
+.detail-person{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f0}
+.detail-person:last-child{border:none}
+.detail-name{font-size:13px;font-weight:600;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  Planificación de Turnos Clínicos
+  <span>— Sistema cuarto turno</span>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('personal')">Personal</div>
+    <div class="tab" onclick="showTab('turnos')">Turnos</div>
+    <div class="tab" onclick="showTab('reglas')">Reglas</div>
+    <div class="tab" onclick="showTab('resultado')">Resultado</div>
+  </div>
+
+  <!-- PERSONAL -->
+  <div class="panel active" id="panel-personal">
+    <div class="section-header">
+      <h2>Equipo de trabajo</h2>
+      <button class="btn" onclick="toggleForm('form-staff')">+ Agregar persona</button>
+    </div>
+    <div class="form-box" id="form-staff" style="display:none">
+      <div class="grid3" style="margin-bottom:10px">
+        <div><label>ID / Nombre</label><input type="text" id="s-id" placeholder="ej: enf_01"></div>
+        <div><label>Rol</label><select id="s-role"><option>enfermero</option><option>TENS</option><option>médico</option><option>matrona</option></select></div>
+        <div><label>Experiencia</label><select id="s-exp"><option value="senior">Senior</option><option value="intermedio" selected>Intermedio</option><option value="junior">Junior</option></select></div>
+      </div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div><label>Horas máximas en el período</label><input type="number" id="s-hours" value="160" min="1"></div>
+        <div><label>Días libres solicitados (YYYY-MM-DD, separados por coma)</label><input type="text" id="s-daysoff" placeholder="2025-07-04, 2025-07-10"></div>
+      </div>
+      <button class="btn btn-primary" onclick="addStaff()">Guardar persona</button>
+    </div>
+    <div id="staff-list"><p class="empty">Sin personal registrado. Agrega personas o carga el ejemplo.</p></div>
+  </div>
+
+  <!-- TURNOS -->
+  <div class="panel" id="panel-turnos">
+    <div class="section-header">
+      <h2>Turnos del período</h2>
+      <button class="btn" onclick="toggleForm('form-shift')">+ Agregar turno</button>
+    </div>
+    <div class="form-box" id="form-shift" style="display:none">
+      <div class="grid3" style="margin-bottom:10px">
+        <div><label>ID del turno</label><input type="text" id="sh-id" placeholder="ej: largo_01-07"></div>
+        <div><label>Tipo</label><select id="sh-kind"><option value="largo">Largo (24h)</option><option value="noche">Noche (12h)</option><option value="dia">Día</option><option value="otro">Otro</option></select></div>
+        <div><label>Dotación requerida</label><input type="number" id="sh-req" value="2" min="1"></div>
+      </div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div><label>Inicio (YYYY-MM-DDTHH:MM)</label><input type="text" id="sh-start" placeholder="2025-07-01T08:00"></div>
+        <div><label>Fin (YYYY-MM-DDTHH:MM)</label><input type="text" id="sh-end" placeholder="2025-07-02T08:00"></div>
+      </div>
+      <button class="btn btn-primary" onclick="addShift()">Guardar turno</button>
+    </div>
+    <div id="shift-list"><p class="empty">Sin turnos registrados.</p></div>
+  </div>
+
+  <!-- REGLAS -->
+  <div class="panel" id="panel-reglas">
+    <h2>Reglas de planificación</h2>
+    <div class="grid2" style="margin-bottom:16px">
+      <div><label>Descanso mínimo entre turnos (horas)</label><input type="number" id="r-rest" value="12" min="0"></div>
+      <div><label>Descanso obligatorio post turno noche (horas)</label><input type="number" id="r-night" value="36" min="0"></div>
+    </div>
+    <div class="toggle-row"><span>Máximo un turno por día por persona</span><input type="checkbox" id="r-oneday" checked></div>
+    <div class="toggle-row"><span>Activar lógica de cuarto turno</span><input type="checkbox" id="r-cuarto" checked></div>
+    <div class="toggle-row"><span>Preferir patrón Largo → Noche (objetivo blando)</span><input type="checkbox" id="r-prefer" checked></div>
+    <div class="toggle-row"><span>Forzar par Largo → Noche (restricción dura — puede causar infactibilidad)</span><input type="checkbox" id="r-force"></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="panel" id="panel-resultado">
+    <div id="result-area"><p class="empty">Genera la planificación para ver el calendario.</p></div>
+  </div>
+
+  <div class="run-bar">
+    <button class="btn btn-primary" id="run-btn" onclick="runSchedule()">Generar planificación</button>
+    <button class="btn" onclick="loadExample()">Cargar ejemplo</button>
+    <span id="run-msg" style="font-size:13px;color:#555"></span>
+  </div>
+
+</div>
+
+<script>
+let staff = [];
+let shifts = [];
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['personal','turnos','reglas','resultado'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach((p, i) => {
+    const names = ['personal','turnos','reglas','resultado'];
+    p.classList.toggle('active', names[i] === name);
+  });
+}
+
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function addStaff() {
+  const id = document.getElementById('s-id').value.trim();
+  if (!id) return alert('El ID es obligatorio');
+  if (staff.find(s => s.id === id)) return alert('Ya existe una persona con ese ID');
+  const raw = document.getElementById('s-daysoff').value.trim();
+  const days = raw ? raw.split(',').map(d => d.trim()).filter(Boolean) : [];
+  staff.push({
+    id,
+    role: document.getElementById('s-role').value,
+    seniority: document.getElementById('s-exp').value,
+    max_hours: parseInt(document.getElementById('s-hours').value) || 160,
+    requested_days_off: days,
+    unavailable_dates: [],
+    unavailable_shift_ids: []
+  });
+  document.getElementById('s-id').value = '';
+  document.getElementById('s-daysoff').value = '';
+  document.getElementById('form-staff').style.display = 'none';
+  renderStaff();
+}
+
+function removeStaff(id) { staff = staff.filter(s => s.id !== id); renderStaff(); }
+
+function renderStaff() {
+  const el = document.getElementById('staff-list');
+  if (!staff.length) { el.innerHTML = '<p class="empty">Sin personal registrado.</p>'; return; }
+  el.innerHTML = staff.map(s => `
+    <div class="item-row">
+      <span class="name">${s.id}</span>
+      <span style="color:#777;font-size:12px">${s.role}</span>
+      <span class="badge b-${s.seniority}">${s.seniority}</span>
+      <span style="color:#777;font-size:12px">${s.max_hours}h</span>
+      ${s.requested_days_off.length ? `<span style="color:#999;font-size:11px">libres: ${s.requested_days_off.join(', ')}</span>` : ''}
+      <button class="btn btn-sm btn-danger" onclick="removeStaff('${s.id}')">Quitar</button>
+    </div>`).join('');
+}
+
+function addShift() {
+  const id = document.getElementById('sh-id').value.trim();
+  if (!id) return alert('El ID es obligatorio');
+  if (shifts.find(s => s.id === id)) return alert('Ya existe un turno con ese ID');
+  const start = document.getElementById('sh-start').value.trim();
+  const end = document.getElementById('sh-end').value.trim();
+  if (!start || !end) return alert('El inicio y fin son obligatorios');
+  shifts.push({
+    id,
+    kind: document.getElementById('sh-kind').value,
+    required_staff: parseInt(document.getElementById('sh-req').value) || 2,
+    start: start.length === 16 ? start + ':00' : start,
+    end: end.length === 16 ? end + ':00' : end
+  });
+  document.getElementById('sh-id').value = '';
+  document.getElementById('sh-start').value = '';
+  document.getElementById('sh-end').value = '';
+  document.getElementById('form-shift').style.display = 'none';
+  renderShifts();
+}
+
+function removeShift(id) { shifts = shifts.filter(s => s.id !== id); renderShifts(); }
+
+function renderShifts() {
+  const el = document.getElementById('shift-list');
+  if (!shifts.length) { el.innerHTML = '<p class="empty">Sin turnos registrados.</p>'; return; }
+  el.innerHTML = shifts.map(s => {
+    const fecha = s.start ? s.start.substring(0, 10) : '';
+    return `<div class="item-row">
+      <span class="name">${s.id}</span>
+      <span class="badge b-${s.kind}">${s.kind}</span>
+      <span style="color:#777;font-size:12px">${fecha}</span>
+      <span style="color:#777;font-size:12px">${s.required_staff} persona(s)</span>
+      <button class="btn btn-sm btn-danger" onclick="removeShift('${s.id}')">Quitar</button>
+    </div>`;
+  }).join('');
+}
+
+async function runSchedule() {
+  if (!staff.length) return alert('Agrega al menos una persona');
+  if (!shifts.length) return alert('Agrega al menos un turno');
+  const btn = document.getElementById('run-btn');
+  const msg = document.getElementById('run-msg');
+  btn.innerHTML = '<span class="spinner"></span>Optimizando...';
+  btn.disabled = true;
+  msg.textContent = '';
+
+  const payload = {
+    staff, shifts,
+    rules: {
+      min_rest_hours: parseInt(document.getElementById('r-rest').value) || 12,
+      night_rest_hours: parseInt(document.getElementById('r-night').value) || 36,
+      enforce_one_shift_per_day: document.getElementById('r-oneday').checked,
+      enforce_cuarto_turno: document.getElementById('r-cuarto').checked,
+      prefer_cuarto_turno_pattern: document.getElementById('r-prefer').checked,
+      force_cuarto_turno_pairing: document.getElementById('r-force').checked
+    }
+  };
+
+  try {
+    const res = await fetch('/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) { showResultError(JSON.stringify(data.detail)); return; }
+    renderResult(data);
+    showTab('resultado');
+    msg.textContent = `Planificación generada en ${data.solver_time_seconds.toFixed(2)}s`;
+  } catch (e) {
+    showResultError('No se pudo conectar. Verifica que el servidor esté corriendo.');
+  } finally {
+    btn.innerHTML = 'Generar planificación';
+    btn.disabled = false;
+  }
+}
+
+function showResultError(msg) {
+  document.getElementById('result-area').innerHTML = `<div class="alert alert-error"><strong>Error:</strong> ${msg}</div>`;
+  showTab('resultado');
+}
+
+function renderResult(data) {
+  if (data.status === 'no_solution') {
+    document.getElementById('result-area').innerHTML = `<div class="alert alert-error"><strong>Sin solución:</strong> ${data.message}</div>`;
+    return;
+  }
+
+  const byStaff = {};
+  staff.forEach(s => byStaff[s.id] = []);
+  data.assignments.forEach(a => { if (byStaff[a.staff_id]) byStaff[a.staff_id].push(a.shift_id); });
+
+  const shiftById = {};
+  shifts.forEach(s => shiftById[s.id] = s);
+
+  const allDates = [...new Set(shifts.map(s => s.start ? s.start.substring(0, 10) : null).filter(Boolean))].sort();
+
+  let html = `<div class="alert alert-success">Planificación generada correctamente. Tiempo del solver: ${data.solver_time_seconds.toFixed(2)}s</div>`;
+
+  html += `<div class="stat-row">
+    <div class="stat"><div class="val">${data.assignments.length}</div><div class="lbl">Asignaciones</div></div>
+    <div class="stat"><div class="val">${staff.length}</div><div class="lbl">Personas</div></div>
+    <div class="stat"><div class="val">${shifts.length}</div><div class="lbl">Turnos</div></div>
+    <div class="stat"><div class="val">${Math.round(data.objective_value)}</div><div class="lbl">Objetivo solver</div></div>
+  </div>`;
+
+  html += `<h2 style="margin-bottom:12px">Calendario</h2><div class="cal-wrap"><table class="cal"><thead><tr>
+    <th class="name-col" style="min-width:90px">Persona</th>
+    <th class="name-col" style="min-width:60px">Rol</th>`;
+
+  allDates.forEach(d => {
+    const dt = new Date(d + 'T12:00:00');
+    const wd = dt.getDay();
+    const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const isWe = wd === 0 || wd === 6;
+    html += `<th${isWe ? ' style="background:#fef9c3;color:#854d0e"' : ''}>${dias[wd]}<br>${dt.getDate()}/${dt.getMonth()+1}</th>`;
+  });
+  html += `<th>Total</th></tr></thead><tbody>`;
+
+  staff.forEach(m => {
+    const assigned = byStaff[m.id] || [];
+    html += `<tr><td class="name-col">${m.id}</td><td class="name-col" style="color:#777;font-weight:400">${m.role}</td>`;
+    allDates.forEach(d => {
+      const dt = new Date(d + 'T12:00:00');
+      const isWe = dt.getDay() === 0 || dt.getDay() === 6;
+      const dayShifts = assigned.filter(sid => {
+        const sh = shiftById[sid];
+        return sh && sh.start && sh.start.substring(0, 10) === d;
+      });
+      if (dayShifts.length) {
+        html += `<td${isWe ? ' class="weekend"' : ''}>${dayShifts.map(sid => {
+          const sh = shiftById[sid];
+          return `<span class="pill pill-${sh.kind}">${sh.kind}</span>`;
+        }).join('<br>')}</td>`;
+      } else {
+        html += `<td${isWe ? ' class="weekend"' : ''}><span class="libre">libre</span></td>`;
+      }
+    });
+    html += `<td style="font-weight:600;text-align:center">${assigned.length}</td></tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  document.getElementById('result-area').innerHTML = html;
+}
+
+function loadExample() {
+  staff = [
+    {id:'enf_01',role:'enfermero',seniority:'senior',max_hours:160,unavailable_dates:[],unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'enf_02',role:'enfermero',seniority:'intermedio',max_hours:160,unavailable_dates:[],unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'enf_03',role:'enfermero',seniority:'junior',max_hours:160,unavailable_dates:['2025-07-04'],unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'enf_04',role:'enfermero',seniority:'intermedio',max_hours:160,unavailable_dates:[],unavailable_shift_ids:[],requested_days_off:['2025-07-06']},
+    {id:'tens_01',role:'TENS',seniority:'senior',max_hours:160,unavailable_dates:[],unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'tens_02',role:'TENS',seniority:'intermedio',max_hours:160,unavailable_dates:[],unavailable_shift_ids:[],requested_days_off:[]}
+  ];
+  shifts = [
+    {id:'largo_2025-07-01',kind:'largo',required_staff:2,start:'2025-07-01T08:00:00',end:'2025-07-02T08:00:00'},
+    {id:'noche_2025-07-02',kind:'noche',required_staff:2,start:'2025-07-02T20:00:00',end:'2025-07-03T08:00:00'},
+    {id:'largo_2025-07-03',kind:'largo',required_staff:2,start:'2025-07-03T08:00:00',end:'2025-07-04T08:00:00'},
+    {id:'noche_2025-07-04',kind:'noche',required_staff:2,start:'2025-07-04T20:00:00',end:'2025-07-05T08:00:00'},
+    {id:'largo_2025-07-05',kind:'largo',required_staff:2,start:'2025-07-05T08:00:00',end:'2025-07-06T08:00:00'},
+    {id:'noche_2025-07-06',kind:'noche',required_staff:2,start:'2025-07-06T20:00:00',end:'2025-07-07T08:00:00'}
+  ];
+  renderStaff();
+  renderShifts();
+  showTab('personal');
+  document.getElementById('run-msg').textContent = 'Ejemplo cargado. Haz clic en "Generar planificación".';
+}
+
+renderStaff();
+renderShifts();
+</script>
+</body>
+</html>
