@@ -68,6 +68,13 @@ table.cal tr:hover td{background:#fafbff}
 .libre{color:#ccc;font-size:10px}
 .we-col{background:#fffbeb}
 .we-hdr{background:#fef3c7 !important;color:#92400e !important}
+.cal td.editable{cursor:pointer;transition:background .1s}
+.cal td.editable:hover{background:#e8f0fb !important}
+.cal td.modified{outline:2px solid #185FA5;outline-offset:-2px}
+.cal td.removed{outline:2px solid #e74c3c;outline-offset:-2px}
+.edit-legend{display:flex;align-items:center;gap:16px;font-size:11px;color:#888;margin-bottom:8px;flex-wrap:wrap}
+.edit-legend span{display:flex;align-items:center;gap:4px}
+.edit-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
 .dotacion-box{background:#fff;border:1px solid #e0e6ef;border-radius:8px;padding:16px}
 .dotacion-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #eee}
 .dotacion-section:last-child{margin:0;padding:0;border:none}
@@ -83,8 +90,6 @@ table.cal tr:hover td{background:#fafbff}
 .feas-detail{color:#888;font-size:11px}
 .feas-ok .feas-label{color:#166534}
 .feas-warn .feas-label{color:#c0392b;font-weight:600}
-.footer-bar {position: fixed;bottom: 0;left: 0;width: 100%; background-color: #185FA5; color: white; height: 40px;display: flex; align-items: center;z-index: 1000;}
-.footer-content {margin-left: auto;margin-right: 20px;font-size: 12px;opacity: 0.9;}
 </style>
 </head>
 <body>
@@ -523,30 +528,61 @@ function showResultError(msg) {
   showTab('resultado');
 }
 
+// Estado editable del calendario
+let currentByStaff = {};      // estado actual (editable)
+let originalByStaff = {};     // resultado original del solver
+let lastSolverData = null;
+
 function renderResult(data) {
   if(data.status==='no_solution'){
     document.getElementById('result-area').innerHTML=`<div class="alert alert-error"><strong>Sin solución:</strong> ${data.message}</div>`;
     return;
   }
+  lastSolverData = data;
+  // Construir estado base desde assignments
   const byStaff={};
   staff.forEach(s=>byStaff[s.id]=[]);
   data.assignments.forEach(a=>{ if(byStaff[a.staff_id]) byStaff[a.staff_id].push(a.shift_id); });
+  originalByStaff = JSON.parse(JSON.stringify(byStaff));
+  currentByStaff  = JSON.parse(JSON.stringify(byStaff));
+  renderCalendar(data, false);
+}
 
+function resetToOriginal() {
+  if(!lastSolverData) return;
+  currentByStaff = JSON.parse(JSON.stringify(originalByStaff));
+  renderCalendar(lastSolverData, false);
+}
+
+function renderCalendar(data, keepEdits) {
   const mes=parseInt(document.getElementById('t-mes').value);
   const año=parseInt(document.getElementById('t-año').value);
   const diasEnMes=new Date(año,mes,0).getDate();
   const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const totalAssign = Object.values(currentByStaff).reduce((a,v)=>a+v.length,0);
 
   let html=`<div class="alert alert-success">Planificación generada correctamente · ${MESES[mes]} ${año} · Solver: ${data.solver_time_seconds.toFixed(2)}s</div>`;
   html+=`<div class="stat-row">
-    <div class="stat"><div class="val">${data.assignments.length}</div><div class="lbl">Asignaciones</div></div>
+    <div class="stat"><div class="val" id="stat-asign">${totalAssign}</div><div class="lbl">Asignaciones</div></div>
     <div class="stat"><div class="val">${staff.length}</div><div class="lbl">Personas</div></div>
     <div class="stat"><div class="val">${shifts.length}</div><div class="lbl">Turnos</div></div>
     <div class="stat"><div class="val">${Math.round(data.objective_value)}</div><div class="lbl">Objetivo solver</div></div>
   </div>`;
 
-  html+=`<h2 style="margin-bottom:10px">Calendario — ${MESES[mes]} ${año}</h2>
-  <div class="cal-wrap"><table class="cal"><thead><tr>
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+    <h2 style="margin:0">Calendario — ${MESES[mes]} ${año}</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div class="edit-legend">
+        <span><span class="edit-dot" style="outline:2px solid #185FA5;outline-offset:1px"></span> Turno agregado</span>
+        <span><span class="edit-dot" style="outline:2px solid #e74c3c;outline-offset:1px"></span> Turno eliminado</span>
+        <span style="color:#555">Click en celda para agregar/quitar turnos</span>
+      </div>
+      <button class="btn btn-sm" onclick="resetToOriginal()" title="Volver al resultado original del solver">↺ Restablecer</button>
+      <button class="btn btn-sm btn-primary" onclick="exportExcel()">⬇ Exportar Excel</button>
+    </div>
+  </div>`;
+
+  html+=`<div class="cal-wrap"><table class="cal" id="cal-editable"><thead><tr>
     <th class="lc">Persona</th><th class="lc">Rol</th>`;
   for(let d=1;d<=diasEnMes;d++){
     const dow=new Date(año,mes-1,d).getDay();
@@ -556,7 +592,8 @@ function renderResult(data) {
   html+=`<th>Tot.</th></tr></thead><tbody>`;
 
   staff.forEach(m=>{
-    const assigned=byStaff[m.id]||[];
+    const assigned = currentByStaff[m.id]||[];
+    const origAssigned = originalByStaff[m.id]||[];
     html+=`<tr><td class="lc">${m.id}</td><td class="lc" style="color:#777;font-weight:400;font-size:11px">${m.role}</td>`;
     for(let d=1;d<=diasEnMes;d++){
       const fecha=fechaStr(año,mes,d);
@@ -564,19 +601,127 @@ function renderResult(data) {
       const esFS=dow===0||dow===6;
       const largo=assigned.includes(`largo_${fecha}`);
       const noche=assigned.includes(`noche_${fecha}`);
+      const origLargo=origAssigned.includes(`largo_${fecha}`);
+      const origNoche=origAssigned.includes(`noche_${fecha}`);
+      // Detectar modificaciones respecto al original
+      const largoMod = largo && !origLargo;
+      const nocheMod = noche && !origNoche;
+      const largoRem = !largo && origLargo;
+      const nocheRem = !noche && origNoche;
+      const isModified = largoMod||nocheMod;
+      const isRemoved  = largoRem||nocheRem;
+      let cls = `editable${esFS?' we-col':''}${isModified?' modified':''}${isRemoved?' removed':''}`;
+      html+=`<td class="${cls}" onclick="toggleCell('${m.id}','${fecha}')" title="Click para editar turnos del ${d}/${mes}">`;
       if(largo||noche){
-        html+=`<td class="${esFS?'we-col':''}">`;
         if(largo) html+=`<span class="pill pill-largo">L</span>`;
         if(noche) html+=`<span class="pill pill-noche">N</span>`;
-        html+=`</td>`;
       } else {
-        html+=`<td class="${esFS?'we-col':''}"><span class="libre">·</span></td>`;
+        html+=`<span class="libre">·</span>`;
       }
+      html+=`</td>`;
     }
-    html+=`<td style="font-weight:700;text-align:center;color:#185FA5">${assigned.length}</td></tr>`;
+    html+=`<td style="font-weight:700;text-align:center;color:#185FA5" id="tot-${m.id.replace(/[^a-z0-9]/gi,'_')}">${assigned.length}</td></tr>`;
   });
   html+=`</tbody></table></div>`;
   document.getElementById('result-area').innerHTML=html;
+}
+
+function toggleCell(staffId, fecha) {
+  // Popup para elegir qué turno agregar/quitar
+  const assigned = currentByStaff[staffId]||[];
+  const largoId = `largo_${fecha}`;
+  const nocheId = `noche_${fecha}`;
+  const hasLargo = assigned.includes(largoId);
+  const hasNoche = assigned.includes(nocheId);
+  const largoExists = shifts.find(s=>s.id===largoId);
+  const nocheExists = shifts.find(s=>s.id===nocheId);
+
+  // Crear mini menú contextual
+  const existing = document.getElementById('cell-menu');
+  if(existing) existing.remove();
+
+  const menu = document.createElement('div');
+  menu.id = 'cell-menu';
+  menu.style.cssText = 'position:fixed;background:#fff;border:1px solid #dde3ec;border-radius:8px;padding:8px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:160px;font-size:13px';
+
+  let menuHtml = `<div style="font-weight:600;padding:4px 8px 8px;color:#555;font-size:11px;border-bottom:1px solid #eee;margin-bottom:6px">${staffId} · ${fecha}</div>`;
+
+  if(largoExists){
+    menuHtml += `<div onclick="toggleShift('${staffId}','${largoId}')" style="padding:6px 8px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
+      <span class="pill pill-largo">L</span> ${hasLargo?'Quitar Largo':'Agregar Largo'}
+    </div>`;
+  }
+  if(nocheExists){
+    menuHtml += `<div onclick="toggleShift('${staffId}','${nocheId}')" style="padding:6px 8px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
+      <span class="pill pill-noche">N</span> ${hasNoche?'Quitar Noche':'Agregar Noche'}
+    </div>`;
+  }
+  menuHtml += `<div onclick="document.getElementById('cell-menu').remove()" style="padding:6px 8px;cursor:pointer;color:#999;font-size:11px;margin-top:4px;border-top:1px solid #eee" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">Cancelar</div>`;
+  menu.innerHTML = menuHtml;
+
+  // Posicionar cerca del click
+  document.body.appendChild(menu);
+  const rect = event.target.getBoundingClientRect();
+  menu.style.left = Math.min(rect.left, window.innerWidth-180)+'px';
+  menu.style.top  = (rect.bottom+4)+'px';
+
+  // Cerrar al hacer click fuera
+  setTimeout(()=>{ document.addEventListener('click', function handler(e){
+    if(!menu.contains(e.target)){ menu.remove(); document.removeEventListener('click',handler); }
+  }); },10);
+}
+
+function toggleShift(staffId, shiftId) {
+  document.getElementById('cell-menu')?.remove();
+  const assigned = currentByStaff[staffId]||[];
+  const idx = assigned.indexOf(shiftId);
+  if(idx>=0){ assigned.splice(idx,1); } else { assigned.push(shiftId); }
+  currentByStaff[staffId] = assigned;
+  renderCalendar(lastSolverData, true);
+}
+
+function exportExcel() {
+  const mes=parseInt(document.getElementById('t-mes').value);
+  const año=parseInt(document.getElementById('t-año').value);
+  const diasEnMes=new Date(año,mes,0).getDate();
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  // Construir CSV compatible con Excel
+  let rows = [];
+  // Header
+  let header = ['Persona','Rol'];
+  for(let d=1;d<=diasEnMes;d++){
+    const dow=new Date(año,mes-1,d).getDay();
+    header.push(`${dias[dow]} ${d}/${mes}`);
+  }
+  header.push('Total turnos');
+  rows.push(header);
+
+  staff.forEach(m=>{
+    const assigned = currentByStaff[m.id]||[];
+    let row = [m.id, m.role];
+    for(let d=1;d<=diasEnMes;d++){
+      const fecha=fechaStr(año,mes,d);
+      const largo=assigned.includes(`largo_${fecha}`);
+      const noche=assigned.includes(`noche_${fecha}`);
+      if(largo && noche) row.push('L+N');
+      else if(largo) row.push('L');
+      else if(noche) row.push('N');
+      else row.push('');
+    }
+    row.push(assigned.length);
+    rows.push(row);
+  });
+
+  // Convertir a CSV con BOM para que Excel abra bien con tildes
+  const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `turnos_${MESES[mes]}_${año}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function loadExample() {
@@ -619,12 +764,5 @@ function loadExample() {
 renderStaff();
 renderShifts();
 </script>
-
-<footer class="footer-bar">
-  <div class="footer-content">
-    Made by Javier Barrientos · 2026
-  </div>
-</footer>
-
 </body>
 </html>
