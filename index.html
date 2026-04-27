@@ -2,189 +2,776 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Proyección Cuarto Turno</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planificación de Turnos Clínicos</title>
 <style>
-body{font-family:sans-serif;background:#f4f6f9;padding:20px}
-.container{max-width:1000px;margin:auto}
-input,button{padding:8px;margin-top:5px}
-button{cursor:pointer}
-.cal{width:100%;border-collapse:collapse;margin-top:20px}
-.cal th,.cal td{border:1px solid #ddd;padding:6px;text-align:center}
-.cal th{background:#185FA5;color:#fff}
-.pill{padding:2px 6px;border-radius:4px;font-size:12px}
-.l{background:#ede9fe}
-.n{background:#1e293b;color:#93c5fd}
-.o{color:#aaa}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-top:20px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#1a1a1a;font-size:14px}
+.topbar{background:#185FA5;color:#fff;padding:14px 24px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+.topbar span{font-size:13px;opacity:.75;font-weight:400}
+.container{max-width:1100px;margin:0 auto;padding:24px 16px}
+.tabs{display:flex;gap:4px;margin-bottom:0;border-bottom:2px solid #dde3ec}
+.tab{padding:9px 20px;border-radius:6px 6px 0 0;font-size:13px;cursor:pointer;border:1px solid transparent;background:transparent;color:#555;position:relative;bottom:-2px;border-bottom:2px solid transparent;transition:background .15s}
+.tab.active{background:#fff;border-color:#dde3ec;border-bottom-color:#fff;color:#185FA5;font-weight:600}
+.tab:hover:not(.active){background:#e8f0fb;color:#185FA5}
+.panel{display:none;background:#fff;border:1px solid #dde3ec;border-top:none;border-radius:0 0 10px 10px;padding:22px}
+.panel.active{display:block}
+h2{font-size:15px;font-weight:600;margin-bottom:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+label{font-size:12px;color:#555;display:block;margin-bottom:4px;font-weight:500}
+input[type=text],input[type=number],select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;color:#1a1a1a;background:#fff}
+input:focus,select:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.btn{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #ccc;background:#fff;color:#1a1a1a;transition:all .15s}
+.btn:hover{background:#f0f0f0}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0c447c}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-danger{background:#fff0f0;color:#c0392b;border-color:#f5c6c6}
+.btn-danger:hover{background:#fde8e8}
+.form-box{background:#f8f9fb;border:1px solid #e0e6ef;border-radius:8px;padding:16px;margin-bottom:14px}
+.item-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f9fb;border:1px solid #e8edf5;border-radius:6px;margin-bottom:6px;flex-wrap:wrap}
+.item-row .name{font-weight:600;font-size:13px;flex:1;min-width:60px}
+.badge{font-size:11px;padding:2px 9px;border-radius:99px;font-weight:500;white-space:nowrap}
+.b-senior{background:#dbeafe;color:#1e40af}
+.b-intermedio{background:#dcfce7;color:#166534}
+.b-junior{background:#fef9c3;color:#854d0e}
+.empty{text-align:center;color:#aaa;padding:24px;font-size:13px;background:#fafbfc;border-radius:6px;border:1px dashed #ddd}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.toggle-row:last-child{border:none}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#185FA5}
+.run-bar{display:flex;align-items:center;gap:12px;padding:18px 0;flex-wrap:wrap;border-top:1px solid #eee;margin-top:4px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{padding:11px 16px;border-radius:6px;font-size:13px;margin-bottom:16px;line-height:1.5}
+.alert-error{background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6}
+.alert-success{background:#f0fff4;color:#166534;border:1px solid #bbf7d0}
+.alert-info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+.alert-warning{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:#f0f4ff;border-radius:8px;padding:12px 16px;flex:1;min-width:100px;text-align:center}
+.stat .val{font-size:22px;font-weight:700;color:#185FA5}
+.stat .lbl{font-size:11px;color:#555;margin-top:3px}
+.cal-wrap{overflow-x:auto;border:1px solid #e0e6ef;border-radius:8px;margin-bottom:20px}
+table.cal{width:100%;border-collapse:collapse;font-size:11px;min-width:700px}
+table.cal th{padding:6px 5px;text-align:center;background:#f0f4ff;font-weight:600;border-bottom:1px solid #ddd;color:#185FA5;white-space:nowrap}
+table.cal th.lc{text-align:left;color:#555;min-width:80px;padding-left:10px}
+table.cal td{padding:5px 5px;border-bottom:1px solid #f0f0f0;text-align:center;vertical-align:middle;white-space:nowrap}
+table.cal td.lc{text-align:left;font-weight:600;font-size:12px;padding-left:10px}
+table.cal tr:last-child td{border-bottom:none}
+table.cal tr:hover td{background:#fafbff}
+.pill{display:inline-block;padding:2px 6px;border-radius:99px;font-size:10px;font-weight:600}
+.pill-largo{background:#ede9fe;color:#5b21b6}
+.pill-noche{background:#1e293b;color:#93c5fd}
+.libre{color:#ccc;font-size:10px}
+.we-col{background:#fffbeb}
+.we-hdr{background:#fef3c7 !important;color:#92400e !important}
+.cal td.editable{cursor:pointer;transition:background .1s}
+.cal td.editable:hover{background:#e8f0fb !important}
+.cal td.modified{outline:2px solid #185FA5;outline-offset:-2px}
+.cal td.removed{outline:2px solid #e74c3c;outline-offset:-2px}
+.edit-legend{display:flex;align-items:center;gap:16px;font-size:11px;color:#888;margin-bottom:8px;flex-wrap:wrap}
+.edit-legend span{display:flex;align-items:center;gap:4px}
+.edit-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+.dotacion-box{background:#fff;border:1px solid #e0e6ef;border-radius:8px;padding:16px}
+.dotacion-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #eee}
+.dotacion-section:last-child{margin:0;padding:0;border:none}
+.dotacion-title{font-size:13px;font-weight:600;margin-bottom:10px;color:#185FA5}
+.mini-stat{display:inline-block;background:#e8f0fb;color:#185FA5;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:500;margin-right:6px;margin-top:4px}
+/* Feasibility check */
+.feas-box{border:1px solid #e0e6ef;border-radius:8px;overflow:hidden;margin-top:12px}
+.feas-header{background:#f0f4ff;padding:10px 14px;font-size:13px;font-weight:600;color:#185FA5;border-bottom:1px solid #dde3ec}
+.feas-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #f5f5f5;font-size:12px}
+.feas-row:last-child{border:none}
+.feas-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+.feas-label{flex:1;color:#333}
+.feas-detail{color:#888;font-size:11px}
+.feas-ok .feas-label{color:#166534}
+.feas-warn .feas-label{color:#c0392b;font-weight:600}
+.footer-bar {position: fixed;bottom: 0;left: 0;width: 100%; background-color: #185FA5; color: white; height: 40px;display: flex; align-items: center;z-index: 1000;}
+.footer-content {margin-left: auto;margin-right: 20px;font-size: 12px;opacity: 0.9;}
 </style>
 </head>
 <body>
 
+<div class="topbar">
+  Planificación de Turnos Clínicos
+  <span>— UCI / Urgencias · Cuarto turno</span>
+</div>
+
 <div class="container">
-  <h2>Proyección Cuarto Turno</h2>
-
-  <label>Fecha inicio ciclo</label><br>
-  <input type="date" id="start-date"><br>
-
-  <label>Número de turnos</label><br>
-  <input type="number" id="num-turnos" value="4"><br>
-
-  <button onclick="configurar()">Configurar turnos</button>
-
-  <div id="config"></div>
-
-  <button onclick="proyectar()">Proyectar</button>
-
-  <div class="nav">
-    <button onclick="cambiarMes(-1)">⬅ Mes anterior</button>
-    <h3 id="mes-titulo"></h3>
-    <button onclick="cambiarMes(1)">Mes siguiente ➡</button>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('personal')">Personal</div>
+    <div class="tab" onclick="showTab('turnos')">Período y turnos</div>
+    <div class="tab" onclick="showTab('reglas')">Reglas</div>
+    <div class="tab" onclick="showTab('resultado')">Resultado</div>
   </div>
 
-  <button onclick="exportCSV()">Exportar CSV</button>
+  <!-- PERSONAL -->
+  <div class="panel active" id="panel-personal">
+    <div class="section-header">
+      <h2>Equipo de trabajo</h2>
+      <button class="btn" onclick="toggleForm('form-staff')">+ Agregar persona</button>
+    </div>
+    <div class="form-box" id="form-staff" style="display:none">
+      <div class="grid3" style="margin-bottom:10px">
+        <div><label>Nombre / ID</label><input type="text" id="s-id" placeholder="ej: Ana Pérez"></div>
+        <div><label>Rol</label>
+          <select id="s-role">
+            <option value="enfermero">Enfermero/a</option>
+            <option value="TENS">TENS</option>
+            <option value="médico">Médico/a</option>
+            <option value="matrona">Matrona</option>
+          </select>
+        </div>
+        <div><label>Experiencia</label>
+          <select id="s-exp">
+            <option value="senior">Senior</option>
+            <option value="intermedio" selected>Intermedio</option>
+            <option value="junior">Junior</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label>Fechas no disponibles (YYYY-MM-DD, separadas por coma)</label>
+        <input type="text" id="s-unavail" placeholder="2025-07-04, 2025-07-15">
+        <p style="font-size:11px;color:#888;margin-top:4px">Vacaciones, licencias o fechas bloqueadas. El solver no asignará turnos esos días.</p>
+      </div>
+      <button class="btn btn-primary" onclick="addStaff()">Guardar persona</button>
+    </div>
+    <div id="staff-list"><p class="empty">Sin personal registrado. Agrega personas o usa "Cargar ejemplo".</p></div>
+  </div>
 
-  <div id="calendario"></div>
+  <!-- TURNOS -->
+  <div class="panel" id="panel-turnos">
+    <h2>Período de planificación</h2>
+    <div class="form-box">
+      <div class="grid3" style="margin-bottom:16px">
+        <div><label>Mes</label>
+          <select id="t-mes">
+            <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+            <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+            <option value="7" selected>Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+            <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+        </div>
+        <div><label>Año</label><input type="number" id="t-año" value="2025" min="2024" max="2030"></div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-primary" style="width:100%" onclick="generarTurnos()">Generar turnos del mes</button>
+        </div>
+      </div>
+
+      <div class="dotacion-box">
+        <div class="dotacion-section">
+          <div class="dotacion-title">Dotación días de semana (lunes a viernes)</div>
+          <div class="grid4">
+            <div><label>Enfermeros — Largo</label><input type="number" id="d-we-enf-l" value="2" min="0"></div>
+            <div><label>TENS — Largo</label><input type="number" id="d-we-tens-l" value="1" min="0"></div>
+            <div><label>Enfermeros — Noche</label><input type="number" id="d-we-enf-n" value="2" min="0"></div>
+            <div><label>TENS — Noche</label><input type="number" id="d-we-tens-n" value="1" min="0"></div>
+          </div>
+        </div>
+        <div class="dotacion-section">
+          <div class="dotacion-title">Dotación fin de semana (sábado y domingo)</div>
+          <div class="grid4">
+            <div><label>Enfermeros — Largo</label><input type="number" id="d-fs-enf-l" value="1" min="0"></div>
+            <div><label>TENS — Largo</label><input type="number" id="d-fs-tens-l" value="1" min="0"></div>
+            <div><label>Enfermeros — Noche</label><input type="number" id="d-fs-enf-n" value="1" min="0"></div>
+            <div><label>TENS — Noche</label><input type="number" id="d-fs-tens-n" value="1" min="0"></div>
+          </div>
+        </div>
+        <div>
+          <div class="dotacion-title">Mínimo personal senior por turno</div>
+          <div class="grid2">
+            <div><label>Mínimo enfermeros senior por turno</label><input type="number" id="d-min-senior-enf" value="1" min="0"></div>
+            <div><label>Mínimo TENS senior por turno</label><input type="number" id="d-min-senior-tens" value="0" min="0"></div>
+          </div>
+        </div>
+      </div>
+      <div id="turno-preview"></div>
+    </div>
+    <div id="shift-list"><p class="empty">Configura el período y haz clic en "Generar turnos del mes".</p></div>
+  </div>
+
+  <!-- REGLAS -->
+  <div class="panel" id="panel-reglas">
+    <h2>Reglas de planificación</h2>
+    <div class="grid2" style="margin-bottom:16px">
+      <div><label>Descanso mínimo entre turnos (horas)</label><input type="number" id="r-rest" value="12" min="0"></div>
+      <div><label>Descanso obligatorio post turno noche (horas)</label><input type="number" id="r-night" value="48" min="0"></div>
+    </div>
+    <div class="toggle-row"><span>Máximo un turno por día por persona</span><input type="checkbox" id="r-oneday" checked></div>
+    <div class="toggle-row"><span>Activar lógica de cuarto turno (Largo → Noche → Libre → Libre)</span><input type="checkbox" id="r-cuarto" checked></div>
+    <div class="toggle-row"><span>Preferir patrón Largo → Noche (objetivo blando)</span><input type="checkbox" id="r-prefer" checked></div>
+    <div class="toggle-row"><span>Forzar par Largo → Noche (restricción dura)</span><input type="checkbox" id="r-force"></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="panel" id="panel-resultado">
+    <div id="result-area"><p class="empty">Genera la planificación para ver el calendario.</p></div>
+  </div>
+
+  <div class="run-bar">
+    <button class="btn btn-primary" id="run-btn" onclick="runSchedule()">Generar planificación</button>
+    <button class="btn" onclick="loadExample()">Cargar ejemplo</button>
+    <span id="run-msg" style="font-size:13px;color:#555"></span>
+  </div>
 </div>
 
 <script>
-let proyeccion = {};
-let baseDate;
-let currentMonthOffset = 0;
+let staff = [];
+let shifts = [];
+const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-const ciclo = ['L','N','O','O'];
+function showTab(name) {
+  ['personal','turnos','reglas','resultado'].forEach((t,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', t===name);
+    document.getElementById('panel-'+t).classList.toggle('active', t===name);
+  });
+}
 
-function configurar(){
-  const n = document.getElementById('num-turnos').value;
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+function addStaff() {
+  const id = document.getElementById('s-id').value.trim();
+  if (!id) return alert('El nombre o ID es obligatorio');
+  if (staff.find(s => s.id===id)) return alert('Ya existe una persona con ese ID');
+  const raw = document.getElementById('s-unavail').value.trim();
+  const unavail = raw ? raw.split(',').map(d=>d.trim()).filter(Boolean) : [];
+  staff.push({ id, role: document.getElementById('s-role').value,
+    seniority: document.getElementById('s-exp').value,
+    max_hours: 999, unavailable_dates: unavail,
+    unavailable_shift_ids: [], requested_days_off: [] });
+  document.getElementById('s-id').value='';
+  document.getElementById('s-unavail').value='';
+  document.getElementById('form-staff').style.display='none';
+  renderStaff();
+}
+
+function removeStaff(id) { staff=staff.filter(s=>s.id!==id); renderStaff(); }
+
+function renderStaff() {
+  const el = document.getElementById('staff-list');
+  if (!staff.length) { el.innerHTML='<p class="empty">Sin personal registrado.</p>'; return; }
+  const byRole = {};
+  staff.forEach(s=>{ if(!byRole[s.role]) byRole[s.role]=[]; byRole[s.role].push(s); });
   let html='';
-
-  for(let i=0;i<n;i++){
-    html+=`
-    <div>
-      <h4>Turno ${i+1}</h4>
-      <input id="p-${i}" placeholder="Personas separadas por coma">
-      <select id="f-${i}">
-        <option value="0">Largo</option>
-        <option value="1">Noche</option>
-        <option value="2">Libre</option>
-        <option value="3">Libre</option>
-      </select>
-    </div>`;
-  }
-
-  document.getElementById('config').innerHTML=html;
-}
-
-function proyectar(){
-  const start = document.getElementById('start-date').value;
-  if(!start) return alert("Define fecha inicio");
-
-  baseDate = new Date(start);
-  proyeccion = {};
-
-  const n = document.getElementById('num-turnos').value;
-
-  for(let i=0;i<n;i++){
-    const personas = document.getElementById(`p-${i}`).value.split(',').map(x=>x.trim()).filter(Boolean);
-    const fase = parseInt(document.getElementById(`f-${i}`).value);
-
-    personas.forEach(p=>{
-      proyeccion[p] = [];
-
-      for(let d=0; d<365; d++){
-        const fecha = new Date(baseDate);
-        fecha.setDate(baseDate.getDate()+d);
-
-        const estado = ciclo[(d + fase) % 4];
-
-        proyeccion[p].push({
-          fecha,
-          estado
-        });
-      }
+  Object.entries(byRole).forEach(([role,members])=>{
+    html+=`<p style="font-size:12px;font-weight:600;color:#555;margin:10px 0 6px">${role} (${members.length})</p>`;
+    members.forEach(s=>{
+      html+=`<div class="item-row">
+        <span class="name">${s.id}</span>
+        <span class="badge b-${s.seniority}">${s.seniority}</span>
+        ${s.unavailable_dates.length?`<span style="color:#999;font-size:11px">no disp: ${s.unavailable_dates.join(', ')}</span>`:''}
+        <button class="btn btn-sm btn-danger" onclick="removeStaff('${s.id}')">Quitar</button>
+      </div>`;
     });
-  }
-
-  currentMonthOffset = 0;
-  render();
+  });
+  el.innerHTML=html;
 }
 
-function cambiarMes(offset){
-  currentMonthOffset += offset;
-  render();
+function pad(n){ return String(n).padStart(2,'0'); }
+function fechaStr(año,mes,dia){ return `${año}-${pad(mes)}-${pad(dia)}`; }
+
+function getDotacion() {
+  return {
+    we:{ enf_l:parseInt(document.getElementById('d-we-enf-l').value)||0,
+         tens_l:parseInt(document.getElementById('d-we-tens-l').value)||0,
+         enf_n:parseInt(document.getElementById('d-we-enf-n').value)||0,
+         tens_n:parseInt(document.getElementById('d-we-tens-n').value)||0 },
+    fs:{ enf_l:parseInt(document.getElementById('d-fs-enf-l').value)||0,
+         tens_l:parseInt(document.getElementById('d-fs-tens-l').value)||0,
+         enf_n:parseInt(document.getElementById('d-fs-enf-n').value)||0,
+         tens_n:parseInt(document.getElementById('d-fs-tens-n').value)||0 }
+  };
 }
 
-function render(){
-  if(!baseDate) return;
+// ─── Validación de factibilidad previa al solver ───────────────────────────
+// En cuarto turno (Largo 24h → Noche 12h → 48h descanso) cada persona puede
+// trabajar como máximo 1 ciclo cada 4 días ≈ ~15 turnos por mes de 31 días.
+// Para cubrir X personas por turno durante N días necesitas al menos X*4 personas
+// del mismo rol (regla del cuarto turno puro). Usamos eso como heurística.
 
-  const fechaRef = new Date(baseDate);
-  fechaRef.setMonth(baseDate.getMonth()+currentMonthOffset);
+function checkFeasibility() {
+  if (!shifts.length || !staff.length) return null;
 
-  const mes = fechaRef.getMonth();
-  const año = fechaRef.getFullYear();
+  const mes = parseInt(document.getElementById('t-mes').value);
+  const año = parseInt(document.getElementById('t-año').value);
+  const diasEnMes = new Date(año, mes, 0).getDate();
 
-  document.getElementById('mes-titulo').innerText =
-    fechaRef.toLocaleString('es',{month:'long',year:'numeric'});
+  // Máximo turnos que una persona puede trabajar en el mes con cuarto turno
+  // Ciclo: 2 turnos cada 4 días → ~15.5 turnos/mes (usamos 15 conservador)
+  const MAX_TURNOS_PER_PERSON = Math.floor(diasEnMes * 2 / 4);
 
-  const diasMes = new Date(año, mes+1, 0).getDate();
+  const roles = ['enfermero', 'TENS'];
+  const warnings = [];
+  const infos = [];
 
-  let html='<table class="cal"><tr><th>Persona</th>';
+  roles.forEach(role => {
+    const personasRol = staff.filter(s => s.role === role);
+    const seniorsRol = personasRol.filter(s => s.seniority === 'senior');
+    const totalPersonas = personasRol.length;
+    const totalSeniors = seniorsRol.length;
 
-  for(let d=1;d<=diasMes;d++){
-    html+=`<th>${d}</th>`;
-  }
+    // Plazas totales requeridas en el mes para este rol
+    const plazasRequeridas = shifts.reduce((acc, s) => acc + (s.required_by_role?.[role] || 0), 0);
+    const capacidadDisponible = totalPersonas * MAX_TURNOS_PER_PERSON;
 
-  html+='</tr>';
+    if (plazasRequeridas === 0) return;
 
-  Object.entries(proyeccion).forEach(([persona, arr])=>{
-    html+=`<tr><td>${persona}</td>`;
+    // Personal mínimo teórico: para N plazas/turno en cuarto turno puro = N*4
+    const dotMax = shifts.reduce((acc, s) => Math.max(acc, s.required_by_role?.[role] || 0), 0);
+    const minPersonasTeoricas = dotMax * 4;
 
-    for(let d=1;d<=diasMes;d++){
-      const fecha = new Date(año, mes, d);
-
-      const item = arr.find(x =>
-        x.fecha.toDateString() === fecha.toDateString()
-      );
-
-      if(item){
-        if(item.estado==='L') html+=`<td><span class="pill l">L</span></td>`;
-        else if(item.estado==='N') html+=`<td><span class="pill n">N</span></td>`;
-        else html+=`<td><span class="pill o">·</span></td>`;
-      } else {
-        html+=`<td></td>`;
-      }
+    if (totalPersonas < minPersonasTeoricas) {
+      warnings.push({
+        icon: '⚠️',
+        label: `${role}: personal insuficiente para cuarto turno`,
+        detail: `Tienes ${totalPersonas} ${role}s pero necesitas mínimo ${minPersonasTeoricas} (${dotMax} por turno × 4 grupos). Agrega ${minPersonasTeoricas - totalPersonas} más.`,
+        ok: false
+      });
+    } else {
+      infos.push({
+        icon: '✅',
+        label: `${role}: dotación viable`,
+        detail: `${totalPersonas} personas disponibles, capacidad ~${capacidadDisponible} turnos, se requieren ${plazasRequeridas} plazas.`,
+        ok: true
+      });
     }
 
-    html+='</tr>';
+    // Verificar seniors
+    const minSeniorEnf = parseInt(document.getElementById('d-min-senior-enf').value)||0;
+    const minSeniorTens = parseInt(document.getElementById('d-min-senior-tens').value)||0;
+    const minSenior = role==='enfermero' ? minSeniorEnf : minSeniorTens;
+    if (minSenior > 0) {
+      const minSeniorsNecesarios = minSenior * 4;
+      if (totalSeniors < minSeniorsNecesarios) {
+        warnings.push({
+          icon: '⚠️',
+          label: `${role}: seniors insuficientes`,
+          detail: `Se requiere ${minSenior} senior/turno → mínimo ${minSeniorsNecesarios} seniors en planilla, pero hay ${totalSeniors}. Agrega ${minSeniorsNecesarios - totalSeniors} senior más o reduce el mínimo.`,
+          ok: false
+        });
+      } else {
+        infos.push({
+          icon: '✅',
+          label: `${role}: cobertura senior viable`,
+          detail: `${totalSeniors} seniors disponibles para cubrir ${minSenior}/turno.`,
+          ok: true
+        });
+      }
+    }
   });
 
-  html+='</table>';
-
-  document.getElementById('calendario').innerHTML = html;
+  return { warnings, infos, hasWarnings: warnings.length > 0 };
 }
 
-function exportCSV(){
-  let rows = [['Persona','Fecha','Turno']];
+function renderFeasibility(result) {
+  if (!result) return '';
+  const rows = [...result.warnings, ...result.infos];
+  if (!rows.length) return '';
+  let html = `<div class="feas-box"><div class="feas-header">
+    ${result.hasWarnings ? '⚠️ Advertencias de factibilidad' : '✅ Configuración viable'}
+  </div>`;
+  rows.forEach(r => {
+    html += `<div class="feas-row ${r.ok?'feas-ok':'feas-warn'}">
+      <span class="feas-icon">${r.icon}</span>
+      <span class="feas-label">${r.label}<br><span class="feas-detail">${r.detail}</span></span>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
 
-  Object.entries(proyeccion).forEach(([p, arr])=>{
-    arr.forEach(d=>{
-      rows.push([
-        p,
-        d.fecha.toISOString().slice(0,10),
-        d.estado
-      ]);
-    });
+function generarTurnos() {
+  const mes = parseInt(document.getElementById('t-mes').value);
+  const año = parseInt(document.getElementById('t-año').value);
+  const diasEnMes = new Date(año, mes, 0).getDate();
+  const dot = getDotacion();
+  const minSeniorEnf = parseInt(document.getElementById('d-min-senior-enf').value)||0;
+  const minSeniorTens = parseInt(document.getElementById('d-min-senior-tens').value)||0;
+
+  shifts=[];
+  for(let d=1;d<=diasEnMes;d++){
+    const fecha = fechaStr(año,mes,d);
+    const dow = new Date(año,mes-1,d).getDay();
+    const esFS = dow===0||dow===6;
+    const D = esFS ? dot.fs : dot.we;
+    const nd = new Date(año,mes-1,d+1);
+    const nextFecha = fechaStr(nd.getFullYear(), nd.getMonth()+1, nd.getDate());
+
+    const buildShift = (tipo, enf, tens, startH) => {
+      const reqByRole = {};
+      if(enf>0) reqByRole['enfermero']=enf;
+      if(tens>0) reqByRole['TENS']=tens;
+      if(!Object.keys(reqByRole).length) return null;
+      const minSenior = {};
+      if(minSeniorEnf>0 && enf>0) minSenior['enfermero']=Math.min(minSeniorEnf,enf);
+      if(minSeniorTens>0 && tens>0) minSenior['TENS']=Math.min(minSeniorTens,tens);
+      return { id:`${tipo}_${fecha}`, kind:tipo,
+        start:`${fecha}T${startH}:00`, end:`${nextFecha}T08:00:00`,
+        required_by_role: reqByRole, min_senior_by_role: minSenior };
+    };
+
+    const largo = buildShift('largo', D.enf_l, D.tens_l, '08:00');
+    const noche = buildShift('noche', D.enf_n, D.tens_n, '20:00');
+    if(largo) shifts.push(largo);
+    if(noche) shifts.push(noche);
+  }
+
+  const totalEnf = shifts.reduce((a,s)=>a+(s.required_by_role?.enfermero||0),0);
+  const totalTens = shifts.reduce((a,s)=>a+(s.required_by_role?.TENS||0),0);
+
+  const feas = checkFeasibility();
+  const feasHtml = renderFeasibility(feas);
+
+  document.getElementById('turno-preview').innerHTML=`
+    <div class="alert alert-info" style="margin:12px 0 0">
+      <strong>${shifts.length} turnos generados</strong> para ${MESES[mes]} ${año} —
+      <span class="mini-stat">${shifts.filter(s=>s.kind==='largo').length} largos</span>
+      <span class="mini-stat">${shifts.filter(s=>s.kind==='noche').length} noches</span>
+      <span class="mini-stat">${totalEnf} plazas enfermero</span>
+      <span class="mini-stat">${totalTens} plazas TENS</span>
+    </div>${feasHtml}`;
+
+  renderShifts();
+}
+
+function renderShifts() {
+  const el = document.getElementById('shift-list');
+  if(!shifts.length){ el.innerHTML='<p class="empty">Sin turnos generados.</p>'; return; }
+  const mes=parseInt(document.getElementById('t-mes').value);
+  const año=parseInt(document.getElementById('t-año').value);
+  const diasEnMes=new Date(año,mes,0).getDate();
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  let html=`<div class="cal-wrap"><table class="cal"><thead><tr><th class="lc">Turno</th>`;
+  for(let d=1;d<=diasEnMes;d++){
+    const dow=new Date(año,mes-1,d).getDay();
+    const esFS=dow===0||dow===6;
+    html+=`<th class="${esFS?'we-hdr':''}">${dias[dow]}<br>${d}</th>`;
+  }
+  html+=`</tr></thead><tbody>`;
+  ['largo','noche'].forEach(tipo=>{
+    html+=`<tr><td class="lc">${tipo==='largo'?'Largo (08→08)':'Noche (20→08)'}</td>`;
+    for(let d=1;d<=diasEnMes;d++){
+      const fecha=fechaStr(año,mes,d);
+      const dow=new Date(año,mes-1,d).getDay();
+      const esFS=dow===0||dow===6;
+      const sh=shifts.find(s=>s.id===`${tipo}_${fecha}`);
+      if(sh){
+        const enf=sh.required_by_role?.enfermero||0;
+        const tens=sh.required_by_role?.TENS||0;
+        html+=`<td class="${esFS?'we-col':''}"><span class="pill pill-${tipo}">${enf>0?enf+'E':''} ${tens>0?tens+'T':''}</span></td>`;
+      } else {
+        html+=`<td class="${esFS?'we-col':''}"><span class="libre">—</span></td>`;
+      }
+    }
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  el.innerHTML=html;
+}
+
+async function runSchedule() {
+  if(!staff.length) return alert('Agrega al menos una persona');
+  if(!shifts.length) return alert('Genera los turnos del mes primero');
+
+  // Mostrar advertencias pero permitir intentar igual
+  const feas = checkFeasibility();
+  if (feas && feas.hasWarnings) {
+    const continuar = confirm(
+      'Se detectaron posibles problemas de factibilidad:\n\n' +
+      feas.warnings.map(w => '• ' + w.label + ': ' + w.detail).join('\n\n') +
+      '\n\n¿Quieres intentar generar la planificación de todas formas?'
+    );
+    if (!continuar) return;
+  }
+
+  const btn=document.getElementById('run-btn');
+  const msg=document.getElementById('run-msg');
+  btn.innerHTML='<span class="spinner"></span>Optimizando...';
+  btn.disabled=true; msg.textContent='';
+
+  const payload={
+    staff, shifts,
+    rules:{
+      min_rest_hours: parseInt(document.getElementById('r-rest').value)||12,
+      night_rest_hours: parseInt(document.getElementById('r-night').value)||36,
+      enforce_one_shift_per_day: document.getElementById('r-oneday').checked,
+      enforce_cuarto_turno: document.getElementById('r-cuarto').checked,
+      prefer_cuarto_turno_pattern: document.getElementById('r-prefer').checked,
+      force_cuarto_turno_pairing: document.getElementById('r-force').checked
+    }
+  };
+
+  try {
+    const res=await fetch('/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok){ showResultError(JSON.stringify(data.detail)); return; }
+    renderResult(data);
+    showTab('resultado');
+    msg.textContent=`Planificación lista en ${data.solver_time_seconds.toFixed(2)}s`;
+  } catch(e) {
+    showResultError('No se pudo conectar. ¿Está corriendo el servidor en localhost:8000?');
+  } finally {
+    btn.innerHTML='Generar planificación';
+    btn.disabled=false;
+  }
+}
+
+function showResultError(msg) {
+  document.getElementById('result-area').innerHTML=`<div class="alert alert-error"><strong>Error:</strong> ${msg}</div>`;
+  showTab('resultado');
+}
+
+// Estado editable del calendario
+let currentByStaff = {};      // estado actual (editable)
+let originalByStaff = {};     // resultado original del solver
+let lastSolverData = null;
+
+function renderResult(data) {
+  if(data.status==='no_solution'){
+    document.getElementById('result-area').innerHTML=`<div class="alert alert-error"><strong>Sin solución:</strong> ${data.message}</div>`;
+    return;
+  }
+  lastSolverData = data;
+  // Construir estado base desde assignments
+  const byStaff={};
+  staff.forEach(s=>byStaff[s.id]=[]);
+  data.assignments.forEach(a=>{ if(byStaff[a.staff_id]) byStaff[a.staff_id].push(a.shift_id); });
+  originalByStaff = JSON.parse(JSON.stringify(byStaff));
+  currentByStaff  = JSON.parse(JSON.stringify(byStaff));
+  renderCalendar(data, false);
+}
+
+function resetToOriginal() {
+  if(!lastSolverData) return;
+  currentByStaff = JSON.parse(JSON.stringify(originalByStaff));
+  renderCalendar(lastSolverData, false);
+}
+
+function renderCalendar(data, keepEdits) {
+  const mes=parseInt(document.getElementById('t-mes').value);
+  const año=parseInt(document.getElementById('t-año').value);
+  const diasEnMes=new Date(año,mes,0).getDate();
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const totalAssign = Object.values(currentByStaff).reduce((a,v)=>a+v.length,0);
+
+  let html=`<div class="alert alert-success">Planificación generada correctamente · ${MESES[mes]} ${año} · Solver: ${data.solver_time_seconds.toFixed(2)}s</div>`;
+  html+=`<div class="stat-row">
+    <div class="stat"><div class="val" id="stat-asign">${totalAssign}</div><div class="lbl">Asignaciones</div></div>
+    <div class="stat"><div class="val">${staff.length}</div><div class="lbl">Personas</div></div>
+    <div class="stat"><div class="val">${shifts.length}</div><div class="lbl">Turnos</div></div>
+    <div class="stat"><div class="val">${Math.round(data.objective_value)}</div><div class="lbl">Objetivo solver</div></div>
+  </div>`;
+
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+    <h2 style="margin:0">Calendario — ${MESES[mes]} ${año}</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div class="edit-legend">
+        <span><span class="edit-dot" style="outline:2px solid #185FA5;outline-offset:1px"></span> Turno agregado</span>
+        <span><span class="edit-dot" style="outline:2px solid #e74c3c;outline-offset:1px"></span> Turno eliminado</span>
+        <span style="color:#555">Click en celda para agregar/quitar turnos</span>
+      </div>
+      <button class="btn btn-sm" onclick="resetToOriginal()" title="Volver al resultado original del solver">↺ Restablecer</button>
+      <button class="btn btn-sm btn-primary" onclick="exportExcel()">⬇ Exportar Excel</button>
+    </div>
+  </div>`;
+
+  html+=`<div class="cal-wrap"><table class="cal" id="cal-editable"><thead><tr>
+    <th class="lc">Persona</th><th class="lc">Rol</th>`;
+  for(let d=1;d<=diasEnMes;d++){
+    const dow=new Date(año,mes-1,d).getDay();
+    const esFS=dow===0||dow===6;
+    html+=`<th class="${esFS?'we-hdr':''}">${dias[dow]}<br>${d}</th>`;
+  }
+  html+=`<th>Tot.</th></tr></thead><tbody>`;
+
+  staff.forEach(m=>{
+    const assigned = currentByStaff[m.id]||[];
+    const origAssigned = originalByStaff[m.id]||[];
+    html+=`<tr><td class="lc">${m.id}</td><td class="lc" style="color:#777;font-weight:400;font-size:11px">${m.role}</td>`;
+    for(let d=1;d<=diasEnMes;d++){
+      const fecha=fechaStr(año,mes,d);
+      const dow=new Date(año,mes-1,d).getDay();
+      const esFS=dow===0||dow===6;
+      const largo=assigned.includes(`largo_${fecha}`);
+      const noche=assigned.includes(`noche_${fecha}`);
+      const origLargo=origAssigned.includes(`largo_${fecha}`);
+      const origNoche=origAssigned.includes(`noche_${fecha}`);
+      // Detectar modificaciones respecto al original
+      const largoMod = largo && !origLargo;
+      const nocheMod = noche && !origNoche;
+      const largoRem = !largo && origLargo;
+      const nocheRem = !noche && origNoche;
+      const isModified = largoMod||nocheMod;
+      const isRemoved  = largoRem||nocheRem;
+      let cls = `editable${esFS?' we-col':''}${isModified?' modified':''}${isRemoved?' removed':''}`;
+      html+=`<td class="${cls}" onclick="toggleCell('${m.id}','${fecha}')" title="Click para editar turnos del ${d}/${mes}">`;
+      if(largo||noche){
+        if(largo) html+=`<span class="pill pill-largo">L</span>`;
+        if(noche) html+=`<span class="pill pill-noche">N</span>`;
+      } else {
+        html+=`<span class="libre">·</span>`;
+      }
+      html+=`</td>`;
+    }
+    html+=`<td style="font-weight:700;text-align:center;color:#185FA5" id="tot-${m.id.replace(/[^a-z0-9]/gi,'_')}">${assigned.length}</td></tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  document.getElementById('result-area').innerHTML=html;
+}
+
+function toggleCell(staffId, fecha) {
+  // Popup para elegir qué turno agregar/quitar
+  const assigned = currentByStaff[staffId]||[];
+  const largoId = `largo_${fecha}`;
+  const nocheId = `noche_${fecha}`;
+  const hasLargo = assigned.includes(largoId);
+  const hasNoche = assigned.includes(nocheId);
+  const largoExists = shifts.find(s=>s.id===largoId);
+  const nocheExists = shifts.find(s=>s.id===nocheId);
+
+  // Crear mini menú contextual
+  const existing = document.getElementById('cell-menu');
+  if(existing) existing.remove();
+
+  const menu = document.createElement('div');
+  menu.id = 'cell-menu';
+  menu.style.cssText = 'position:fixed;background:#fff;border:1px solid #dde3ec;border-radius:8px;padding:8px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:160px;font-size:13px';
+
+  let menuHtml = `<div style="font-weight:600;padding:4px 8px 8px;color:#555;font-size:11px;border-bottom:1px solid #eee;margin-bottom:6px">${staffId} · ${fecha}</div>`;
+
+  if(largoExists){
+    menuHtml += `<div onclick="toggleShift('${staffId}','${largoId}')" style="padding:6px 8px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
+      <span class="pill pill-largo">L</span> ${hasLargo?'Quitar Largo':'Agregar Largo'}
+    </div>`;
+  }
+  if(nocheExists){
+    menuHtml += `<div onclick="toggleShift('${staffId}','${nocheId}')" style="padding:6px 8px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
+      <span class="pill pill-noche">N</span> ${hasNoche?'Quitar Noche':'Agregar Noche'}
+    </div>`;
+  }
+  menuHtml += `<div onclick="document.getElementById('cell-menu').remove()" style="padding:6px 8px;cursor:pointer;color:#999;font-size:11px;margin-top:4px;border-top:1px solid #eee" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">Cancelar</div>`;
+  menu.innerHTML = menuHtml;
+
+  // Posicionar cerca del click
+  document.body.appendChild(menu);
+  const rect = event.target.getBoundingClientRect();
+  menu.style.left = Math.min(rect.left, window.innerWidth-180)+'px';
+  menu.style.top  = (rect.bottom+4)+'px';
+
+  // Cerrar al hacer click fuera
+  setTimeout(()=>{ document.addEventListener('click', function handler(e){
+    if(!menu.contains(e.target)){ menu.remove(); document.removeEventListener('click',handler); }
+  }); },10);
+}
+
+function toggleShift(staffId, shiftId) {
+  document.getElementById('cell-menu')?.remove();
+  const assigned = currentByStaff[staffId]||[];
+  const idx = assigned.indexOf(shiftId);
+  if(idx>=0){ assigned.splice(idx,1); } else { assigned.push(shiftId); }
+  currentByStaff[staffId] = assigned;
+  renderCalendar(lastSolverData, true);
+}
+
+function exportExcel() {
+  const mes=parseInt(document.getElementById('t-mes').value);
+  const año=parseInt(document.getElementById('t-año').value);
+  const diasEnMes=new Date(año,mes,0).getDate();
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  // Construir CSV compatible con Excel
+  let rows = [];
+  // Header
+  let header = ['Persona','Rol'];
+  for(let d=1;d<=diasEnMes;d++){
+    const dow=new Date(año,mes-1,d).getDay();
+    header.push(`${dias[dow]} ${d}/${mes}`);
+  }
+  header.push('Total turnos');
+  rows.push(header);
+
+  staff.forEach(m=>{
+    const assigned = currentByStaff[m.id]||[];
+    let row = [m.id, m.role];
+    for(let d=1;d<=diasEnMes;d++){
+      const fecha=fechaStr(año,mes,d);
+      const largo=assigned.includes(`largo_${fecha}`);
+      const noche=assigned.includes(`noche_${fecha}`);
+      if(largo && noche) row.push('L+N');
+      else if(largo) row.push('L');
+      else if(noche) row.push('N');
+      else row.push('');
+    }
+    row.push(assigned.length);
+    rows.push(row);
   });
 
-  const csv = '\uFEFF' + rows.map(r=>r.join(';')).join('\n');
-  const blob = new Blob([csv]);
+  // Convertir a CSV con BOM para que Excel abra bien con tildes
+  const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement('a');
-  a.href=url;
-  a.download='proyeccion.csv';
+  a.href = url;
+  a.download = `turnos_${MESES[mes]}_${año}.csv`;
   a.click();
+  URL.revokeObjectURL(url);
 }
+
+function loadExample() {
+  // Cuarto turno: N personas/turno × 4 grupos. Dotación semana: 2 enf + 1 TENS.
+  // Necesita 8 enfermeros (4 senior, uno por grupo) y 4 TENS.
+  staff=[
+    {id:'Ana Gonzalez',   role:'enfermero',seniority:'senior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Beatriz Rojas',  role:'enfermero',seniority:'senior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Carlos Munoz',   role:'enfermero',seniority:'senior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Diana Vega',     role:'enfermero',seniority:'senior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Eduardo Castro', role:'enfermero',seniority:'intermedio',max_hours:999,unavailable_dates:['2025-07-14','2025-07-15'],unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Francisca Diaz', role:'enfermero',seniority:'intermedio',max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Gustavo Soto',   role:'enfermero',seniority:'junior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Helena Mora',    role:'enfermero',seniority:'junior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Ignacio Reyes',  role:'TENS',     seniority:'senior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Javiera Lagos',  role:'TENS',     seniority:'intermedio',max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Kevin Fuentes',  role:'TENS',     seniority:'intermedio',max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]},
+    {id:'Laura Pinto',    role:'TENS',     seniority:'junior',    max_hours:999,unavailable_dates:[],                         unavailable_shift_ids:[],requested_days_off:[]}
+  ];
+  document.getElementById('t-mes').value='7';
+  document.getElementById('t-año').value='2025';
+  // Semana: 2 enfermeros + 1 TENS por turno
+  document.getElementById('d-we-enf-l').value='2';
+  document.getElementById('d-we-tens-l').value='1';
+  document.getElementById('d-we-enf-n').value='2';
+  document.getElementById('d-we-tens-n').value='1';
+  // Fin de semana: 1 enfermero + 1 TENS por turno
+  document.getElementById('d-fs-enf-l').value='1';
+  document.getElementById('d-fs-tens-l').value='1';
+  document.getElementById('d-fs-enf-n').value='1';
+  document.getElementById('d-fs-tens-n').value='1';
+  document.getElementById('d-min-senior-enf').value='1';
+  document.getElementById('d-min-senior-tens').value='0';
+  generarTurnos();
+  renderStaff();
+  showTab('personal');
+  document.getElementById('run-msg').textContent='Ejemplo cargado — ve a "Período y turnos" y genera la planificación.';
+}
+
+renderStaff();
+renderShifts();
 </script>
+
+<footer class="footer-bar">
+  <div class="footer-content">
+    Made by Javier Barrientos · 2026
+  </div>
+</footer>
 
 </body>
 </html>
