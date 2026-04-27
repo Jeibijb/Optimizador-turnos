@@ -224,16 +224,8 @@ table.cal tr:hover td{background:#fafbff}
     <label>Fecha real de inicio del ciclo</label>
     <input type="date" id="pattern-start-date">
 
-    <label style="margin-top:10px">Día actual dentro del ciclo</label>
-    <select id="pattern-offset">
-      <option value="0">Día 1 (Largo)</option>
-      <option value="1">Día 2 (Noche)</option>
-      <option value="2">Día 3 (Libre)</option>
-      <option value="3">Día 4 (Libre)</option>
-    </select>
-
     <p style="font-size:11px;color:#888;margin-top:4px">
-      Define desde cuándo empieza realmente el ciclo y en qué punto está hoy.
+      Define desde cuándo empieza realmente el ciclo base.
     </p>
   </div>
     
@@ -845,8 +837,6 @@ function proyectarTurnosActivos(){
     return;
   }
 
-  const offset = parseInt(document.getElementById('pattern-offset').value) || 0;
-
   const startDate = new Date(startDateStr);
   const diasEnMes = new Date(año, mes, 0).getDate();
 
@@ -869,7 +859,7 @@ function proyectarTurnosActivos(){
         const diffDias = Math.floor((fechaActual - startDate) / (1000*60*60*24));
 
         // 🔴 Ajuste por offset + fase del turno
-        const index = (diffDias + offset + fase) % 4;
+        const index = (diffDias + fase) % 4;
 
         const estado = ciclo[(index + 4) % 4]; // evita negativos
         calendario[p].push(estado);
