@@ -90,15 +90,78 @@ table.cal tr:hover td{background:#fafbff}
 .feas-detail{color:#888;font-size:11px}
 .feas-ok .feas-label{color:#166534}
 .feas-warn .feas-label{color:#c0392b;font-weight:600}
-.footer-bar {position: fixed;bottom: 0;left: 0;width: 100%; background-color: #185FA5; color: white; height: 40px;display: flex; align-items: center;z-index: 1000;}
-.footer-content {margin-left: auto;margin-right: 20px;font-size: 12px;opacity: 0.9;}
+/* Servicio activo */
+.activo-turno-card{background:#fff;border:1px solid #dde3ec;border-radius:10px;padding:18px;margin-bottom:12px}
+.activo-turno-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f0f0f0}
+.turno-color{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.mes-nav{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.mes-nav button{padding:6px 14px;border-radius:6px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:13px}
+.mes-nav button:hover{background:#f0f0f0}
+.mes-nav h3{font-size:15px;font-weight:600;flex:1;text-align:center}
+.pill-g0{background:#ede9fe;color:#5b21b6}
+.pill-g1{background:#1e293b;color:#93c5fd}
+.pill-g2{background:#dcfce7;color:#166534}
+.pill-g3{background:#fef9c3;color:#854d0e}
+.pill-g4{background:#ffe4e6;color:#9f1239}
+.pill-g5{background:#f0fdf4;color:#15803d}
+.pill-g6{background:#fff7ed;color:#c2410c}
+.pill-g7{background:#f0f9ff;color:#0369a1}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  Planificación de Turnos Clínicos
+  <span style="font-size:16px;font-weight:600;opacity:1">Planificación de Turnos Clínicos</span>
   <span>— UCI / Urgencias · Cuarto turno</span>
+  <div style="margin-left:auto">
+    <button class="btn" id="btn-modo-activo" onclick="mostrarServicioActivo()" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);font-size:12px">
+      📋 Servicio activo
+    </button>
+  </div>
+</div>
+
+<!-- VISTA SERVICIO ACTIVO -->
+<div id="vista-activo" style="display:none">
+  <div style="background:#0c447c;color:#fff;padding:10px 24px;font-size:13px;display:flex;align-items:center;gap:12px">
+    <button onclick="cerrarServicioActivo()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px">← Volver al optimizador</button>
+    <span style="font-weight:600">Proyección de servicio activo</span>
+    <span style="opacity:.7">Visualiza el año completo según patrón ya establecido</span>
+  </div>
+  <div class="container" id="activo-container">
+
+    <!-- PASO 1: Configuración -->
+    <div id="activo-config" style="margin-top:0">
+      <div style="background:#fff;border:1px solid #dde3ec;border-radius:10px;padding:22px;margin-bottom:16px">
+        <h2>Configurar patrón del servicio</h2>
+        <div class="grid3" style="margin-bottom:16px">
+          <div>
+            <label>Fecha de referencia (inicio del patrón)</label>
+            <input type="date" id="activo-fecha-ref" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+            <p style="font-size:11px;color:#888;margin-top:4px">Día desde el que conoces el patrón de cada turno.</p>
+          </div>
+          <div>
+            <label>Número de turnos rotativos</label>
+            <input type="number" id="activo-n-turnos" value="4" min="2" max="8" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+            <p style="font-size:11px;color:#888;margin-top:4px">Ej: 4 para el cuarto turno clásico.</p>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-primary" style="width:100%" onclick="generarFormTurnos()">Configurar turnos →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario dinámico de turnos -->
+      <div id="activo-turnos-form"></div>
+
+      <div id="activo-btn-proyectar" style="display:none;padding:16px 0;border-top:1px solid #eee;display:none;gap:12px;align-items:center">
+        <button class="btn btn-primary" onclick="proyectarAnio()">Proyectar año completo</button>
+        <span style="font-size:13px;color:#555" id="activo-status"></span>
+      </div>
+    </div>
+
+    <!-- RESULTADO proyección -->
+    <div id="activo-resultado" style="display:none"></div>
+  </div>
 </div>
 
 <div class="container">
@@ -765,13 +828,269 @@ function loadExample() {
 
 renderStaff();
 renderShifts();
+
+// ═══════════════════════════════════════════════════════
+// SERVICIO ACTIVO — proyección de patrón ya establecido
+// ═══════════════════════════════════════════════════════
+
+const TURNO_COLORS = ['#7c3aed','#1e40af','#16a34a','#ca8a04','#dc2626','#0891b2','#9333ea','#b45309'];
+const CICLO_LABELS = ['L','N','·','·']; // Largo, Noche, Libre, Libre
+
+// Estado del servicio activo
+let activoTurnos = []; // [{nombre, integrantes:[], patron:['largo','noche','libre','libre'], offset}]
+let activoFechaRef = null;
+let activoMesVista = null; // {año, mes}
+let activoEdits = {}; // {staffId_fecha: 'largo'|'noche'|'libre'}
+
+function mostrarServicioActivo() {
+  document.getElementById('vista-activo').style.display = 'block';
+  document.querySelector('.container').style.display = 'none';
+  // Set fecha por defecto = hoy
+  if (!document.getElementById('activo-fecha-ref').value) {
+    const hoy = new Date();
+    document.getElementById('activo-fecha-ref').value = hoy.toISOString().slice(0,10);
+  }
+}
+
+function cerrarServicioActivo() {
+  document.getElementById('vista-activo').style.display = 'none';
+  document.querySelector('.container').style.display = 'block';
+}
+
+function generarFormTurnos() {
+  const n = parseInt(document.getElementById('activo-n-turnos').value) || 4;
+  const fechaRef = document.getElementById('activo-fecha-ref').value;
+  if (!fechaRef) return alert('Selecciona una fecha de referencia');
+
+  const cicloOpciones = ['largo','noche','libre'];
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const color = TURNO_COLORS[i % TURNO_COLORS.length];
+    html += `<div class="activo-turno-card">
+      <div class="activo-turno-header">
+        <div class="turno-color" style="background:${color}"></div>
+        <strong style="font-size:14px">Turno ${i+1}</strong>
+        <span style="font-size:12px;color:#888">— ¿Qué tipo de turno tiene el día ${fechaRef}?</span>
+      </div>
+      <div class="grid2" style="margin-bottom:12px">
+        <div>
+          <label>Turno del día de referencia</label>
+          <select id="activo-patron-${i}" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+            <option value="0">Largo (L)</option>
+            <option value="1">Noche (N)</option>
+            <option value="2">Libre (primer día libre)</option>
+            <option value="3">Libre (segundo día libre)</option>
+          </select>
+          <p style="font-size:11px;color:#888;margin-top:4px">El ciclo L→N→Libre→Libre se repite automáticamente.</p>
+        </div>
+        <div>
+          <label>Integrantes del turno (separados por coma)</label>
+          <input type="text" id="activo-integrantes-${i}" placeholder="Ana González, Carlos Muñoz, ...">
+        </div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('activo-turnos-form').innerHTML = html;
+  document.getElementById('activo-btn-proyectar').style.display = 'flex';
+}
+
+function proyectarAnio() {
+  const fechaRef = document.getElementById('activo-fecha-ref').value;
+  if (!fechaRef) return alert('Selecciona una fecha de referencia');
+  const n = parseInt(document.getElementById('activo-n-turnos').value) || 4;
+
+  activoFechaRef = new Date(fechaRef + 'T12:00:00');
+  activoTurnos = [];
+  activoEdits = {};
+
+  for (let i = 0; i < n; i++) {
+    const offset = parseInt(document.getElementById(`activo-patron-${i}`).value);
+    const integrantesRaw = document.getElementById(`activo-integrantes-${i}`).value;
+    const integrantes = integrantesRaw.split(',').map(s=>s.trim()).filter(Boolean);
+    if (!integrantes.length) { alert(`El turno ${i+1} no tiene integrantes`); return; }
+    activoTurnos.push({ nombre: `Turno ${i+1}`, integrantes, offset, color: TURNO_COLORS[i % TURNO_COLORS.length] });
+  }
+
+  // Vista inicial: mes de la fecha de referencia
+  activoMesVista = { año: activoFechaRef.getFullYear(), mes: activoFechaRef.getMonth() + 1 };
+  document.getElementById('activo-resultado').style.display = 'block';
+  renderActivoMes();
+  document.getElementById('activo-resultado').scrollIntoView({ behavior: 'smooth' });
+}
+
+function getTurnoEnFecha(turnoIdx, fecha) {
+  // Calcula qué posición del ciclo [L,N,·,·] tiene este turno en la fecha dada
+  const ciclo = ['largo','noche','libre','libre'];
+  const diff = Math.round((fecha - activoFechaRef) / 86400000);
+  const pos = ((activoTurnos[turnoIdx].offset + diff) % 4 + 4) % 4;
+  return ciclo[pos];
+}
+
+function getStaffTurno(staffId) {
+  return activoTurnos.findIndex(t => t.integrantes.includes(staffId));
+}
+
+function getTurnoEnFechaForStaff(staffId, fecha) {
+  const turnoIdx = getStaffTurno(staffId);
+  if (turnoIdx === -1) return 'libre';
+  const key = `${staffId}_${fecha.toISOString().slice(0,10)}`;
+  if (activoEdits[key] !== undefined) return activoEdits[key];
+  return getTurnoEnFecha(turnoIdx, fecha);
+}
+
+function renderActivoMes() {
+  const { año, mes } = activoMesVista;
+  const diasEnMes = new Date(año, mes, 0).getDate();
+  const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const allStaff = activoTurnos.flatMap(t => t.integrantes);
+
+  let html = `<div class="mes-nav">
+    <button onclick="cambiarMesActivo(-1)">← Mes anterior</button>
+    <h3>${MESES[mes]} ${año}</h3>
+    <button onclick="cambiarMesActivo(1)">Mes siguiente →</button>
+    <button class="btn btn-sm btn-primary" style="margin-left:auto" onclick="exportActivoExcel()">⬇ Exportar año Excel</button>
+  </div>`;
+
+  // Leyenda de turnos
+  html += `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px">`;
+  activoTurnos.forEach((t,i) => {
+    html += `<span style="display:flex;align-items:center;gap:5px">
+      <span style="width:10px;height:10px;border-radius:2px;background:${t.color};display:inline-block"></span>
+      ${t.nombre}
+    </span>`;
+  });
+  html += `<span style="color:#888;margin-left:8px">· = Libre &nbsp; L = Largo &nbsp; N = Noche</span></div>`;
+
+  // Tabla
+  html += `<div class="cal-wrap"><table class="cal"><thead><tr>
+    <th class="lc">Persona</th><th class="lc">Turno</th>`;
+  for (let d = 1; d <= diasEnMes; d++) {
+    const dow = new Date(año, mes-1, d).getDay();
+    const esFS = dow===0||dow===6;
+    html += `<th class="${esFS?'we-hdr':''}">${dias[dow]}<br>${d}</th>`;
+  }
+  html += `<th>L</th><th>N</th></tr></thead><tbody>`;
+
+  activoTurnos.forEach((turno, ti) => {
+    turno.integrantes.forEach(nombre => {
+      let totalL = 0, totalN = 0;
+      html += `<tr><td class="lc">${nombre}</td>
+        <td class="lc" style="font-size:11px;color:${turno.color};font-weight:600">${turno.nombre}</td>`;
+      for (let d = 1; d <= diasEnMes; d++) {
+        const fecha = new Date(año, mes-1, d);
+        const dow = fecha.getDay();
+        const esFS = dow===0||dow===6;
+        const fechaStr2 = `${año}-${pad(mes)}-${pad(d)}`;
+        const tipo = getTurnoEnFechaForStaff(nombre, fecha);
+        const key = `${nombre}_${fechaStr2}`;
+        const isEdit = activoEdits[key] !== undefined;
+        if (tipo==='largo') totalL++;
+        if (tipo==='noche') totalN++;
+        html += `<td class="editable${esFS?' we-col':''}${isEdit?' modified':''}"
+          onclick="toggleActivoCell('${nombre.replace(/'/g,"\'")}','${fechaStr2}')"
+          title="Click para editar">`;
+        if (tipo==='largo') html += `<span class="pill pill-largo">L</span>`;
+        else if (tipo==='noche') html += `<span class="pill pill-noche">N</span>`;
+        else html += `<span class="libre">·</span>`;
+        html += `</td>`;
+      }
+      html += `<td style="font-weight:700;color:#185FA5;text-align:center">${totalL}</td>
+               <td style="font-weight:700;color:#334155;text-align:center">${totalN}</td></tr>`;
+    });
+  });
+
+  html += `</tbody></table></div>
+  <p style="font-size:11px;color:#aaa;margin-top:8px">Click en cualquier celda para editar · Los cambios se mantienen al navegar entre meses</p>`;
+
+  document.getElementById('activo-resultado').innerHTML = html;
+}
+
+function cambiarMesActivo(delta) {
+  let { año, mes } = activoMesVista;
+  mes += delta;
+  if (mes > 12) { mes = 1; año++; }
+  if (mes < 1)  { mes = 12; año--; }
+  activoMesVista = { año, mes };
+  renderActivoMes();
+}
+
+function toggleActivoCell(nombre, fechaStr2) {
+  const key = `${nombre}_${fechaStr2}`;
+  const fecha = new Date(fechaStr2 + 'T12:00:00');
+  const turnoIdx = getStaffTurno(nombre);
+  const original = turnoIdx >= 0 ? getTurnoEnFecha(turnoIdx, fecha) : 'libre';
+  const current = activoEdits[key] !== undefined ? activoEdits[key] : original;
+
+  // Ciclar: largo → noche → libre → (volver a original y borrar edit)
+  const ciclo = ['largo','noche','libre'];
+  const idx = ciclo.indexOf(current);
+  const next = ciclo[(idx+1) % ciclo.length];
+
+  if (next === original) {
+    delete activoEdits[key]; // volver al original = borrar edición
+  } else {
+    activoEdits[key] = next;
+  }
+  renderActivoMes();
+}
+
+function exportActivoExcel() {
+  if (!activoFechaRef || !activoTurnos.length) return;
+  // Exportar desde hoy hasta fin del año de la fecha de referencia
+  const añoRef = activoFechaRef.getFullYear();
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const fin = new Date(añoRef + 1, 0, 0); // 31 dic del año de referencia
+
+  const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const MESES_CORTO = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+  // Construir cabecera de fechas
+  let fechas = [];
+  let cur = new Date(inicio);
+  while (cur <= fin) {
+    fechas.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  let rows = [];
+  // Fila de meses (agrupados)
+  let mesRow = ['Persona','Turno'];
+  let diaRow = ['',''];
+  fechas.forEach(f => {
+    mesRow.push(`${MESES_CORTO[f.getMonth()+1]} ${f.getFullYear()}`);
+    diaRow.push(`${dias[f.getDay()]} ${f.getDate()}`);
+  });
+  mesRow.push('Total L','Total N');
+  diaRow.push('','');
+  rows.push(mesRow);
+  rows.push(diaRow);
+
+  activoTurnos.forEach(turno => {
+    turno.integrantes.forEach(nombre => {
+      let row = [nombre, turno.nombre];
+      let totalL=0, totalN=0;
+      fechas.forEach(f => {
+        const tipo = getTurnoEnFechaForStaff(nombre, f);
+        if (tipo==='largo') { row.push('L'); totalL++; }
+        else if (tipo==='noche') { row.push('N'); totalN++; }
+        else row.push('');
+      });
+      row.push(totalL, totalN);
+      rows.push(row);
+    });
+  });
+
+  const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('
+');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `proyeccion_servicio_activo_${añoRef}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 </script>
-
-<footer class="footer-bar">
-  <div class="footer-content">
-    Made by Javier Barrientos · 2026
-  </div>
-</footer>
-
 </body>
 </html>
