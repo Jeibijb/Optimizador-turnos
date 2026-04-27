@@ -102,11 +102,16 @@ table.cal tr:hover td{background:#fafbff}
 </div>
 
 <div class="container">
+  <div style="margin-bottom:16px;display:flex;gap:10px">
+  <button class="btn btn-primary" onclick="showTab('personal')">Modo generar planificación</button>
+  <button class="btn" onclick="initProyeccion()">Servicio ya en funcionamiento</button>
+  </div>
   <div class="tabs">
     <div class="tab active" onclick="showTab('personal')">Personal</div>
     <div class="tab" onclick="showTab('turnos')">Período y turnos</div>
     <div class="tab" onclick="showTab('reglas')">Reglas</div>
     <div class="tab" onclick="showTab('resultado')">Resultado</div>
+    <div class="tab" onclick="showTab('proyeccion')">Servicio activo</div>
   </div>
 
   <!-- PERSONAL -->
@@ -213,6 +218,22 @@ table.cal tr:hover td{background:#fafbff}
     <div id="result-area"><p class="empty">Genera la planificación para ver el calendario.</p></div>
   </div>
 
+  <div class="panel" id="panel-proyeccion">
+    <h2>Cargar última semana real</h2>
+
+    <p style="font-size:12px;color:#666;margin-bottom:12px">
+      Ingresa los turnos reales de los últimos 7 días para proyectar el calendario.
+    </p>
+
+    <div id="tabla-semana"></div>
+
+    <div style="margin-top:16px">
+      <button class="btn btn-primary" onclick="procesarProyeccion()">
+        Proyectar calendario
+      </button>
+    </div>
+  </div>
+  
   <div class="run-bar">
     <button class="btn btn-primary" id="run-btn" onclick="runSchedule()">Generar planificación</button>
     <button class="btn" onclick="loadExample()">Cargar ejemplo</button>
@@ -226,9 +247,14 @@ let shifts = [];
 const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 function showTab(name) {
-  ['personal','turnos','reglas','resultado'].forEach((t,i) => {
-    document.querySelectorAll('.tab')[i].classList.toggle('active', t===name);
-    document.getElementById('panel-'+t).classList.toggle('active', t===name);
+  const tabs = ['personal','turnos','reglas','resultado','proyeccion'];
+
+  document.querySelectorAll('.tab').forEach((tab,i)=>{
+    tab.classList.toggle('active', tabs[i]===name);
+  });
+
+  tabs.forEach(t=>{
+    document.getElementById('panel-'+t)?.classList.toggle('active', t===name);
   });
 }
 
@@ -763,6 +789,142 @@ function loadExample() {
   document.getElementById('run-msg').textContent='Ejemplo cargado — ve a "Período y turnos" y genera la planificación.';
 }
 
+  // ===== PROYECCIÓN DESDE SERVICIO ACTIVO =====
+
+function initProyeccion(){
+  if(!staff.length){
+    alert("Primero debes ingresar el personal");
+    return;
+  }
+  generarTablaSemana();
+  showTab('proyeccion');
+}
+
+function generarTablaSemana() {
+  const dias = 7;
+  let html = `<div class="cal-wrap"><table class="cal"><thead><tr><th>Persona</th>`;
+
+  for (let i = 0; i < dias; i++) {
+    html += `<th>D${i+1}</th>`;
+  }
+
+  html += `</tr></thead><tbody>`;
+
+  staff.forEach(s => {
+    html += `<tr><td class="lc">${s.id}</td>`;
+
+    for (let i = 0; i < dias; i++) {
+      html += `
+        <td>
+          <select id="sem-${s.id}-${i}">
+            <option value="">-</option>
+            <option value="L">L</option>
+            <option value="N">N</option>
+            <option value="O">Libre</option>
+          </select>
+        </td>`;
+    }
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+
+  document.getElementById('tabla-semana').innerHTML = html;
+}
+
+// inferencia robusta (soporta swaps)
+function inferOffsetRobusto(history, pattern) {
+  let bestOffset = 0;
+  let bestScore = -1;
+
+  for (let offset = 0; offset < pattern.length; offset++) {
+    let score = 0;
+
+    for (let i = 0; i < history.length; i++) {
+      if (history[i] === pattern[(offset + i) % pattern.length]) {
+        score++;
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestOffset = offset;
+    }
+  }
+
+  return bestOffset;
+}
+
+function proyectarPersona(offset, dias, pattern) {
+  const result = [];
+  for (let i = 0; i < dias; i++) {
+    result.push(pattern[(offset + i) % pattern.length]);
+  }
+  return result;
+}
+
+function procesarProyeccion() {
+  const pattern = ["L","N","O","O"];
+
+  const mes=parseInt(document.getElementById('t-mes').value);
+  const año=parseInt(document.getElementById('t-año').value);
+  const diasEnMes=new Date(año,mes,0).getDate();
+
+  const byStaff = {};
+
+  for (const s of staff) {
+    let history = [];
+
+    for (let i = 0; i < 7; i++) {
+      const val = document.getElementById(`sem-${s.id}-${i}`).value;
+      if (val) history.push(val);
+    }
+
+    if (history.length < 3) {
+      alert(`Historial insuficiente para ${s.id}`);
+      return;
+    }
+
+    const offset = inferOffsetRobusto(history, pattern);
+    const proy = proyectarPersona(offset, diasEnMes, pattern);
+
+    byStaff[s.id] = proy;
+  }
+
+  renderProyeccion(byStaff);
+}
+
+function renderProyeccion(byStaff) {
+  const mes=parseInt(document.getElementById('t-mes').value);
+  const año=parseInt(document.getElementById('t-año').value);
+  const diasEnMes=new Date(año,mes,0).getDate();
+
+  currentByStaff = {};
+
+  staff.forEach(s => {
+    currentByStaff[s.id] = [];
+    const proy = byStaff[s.id];
+
+    for (let d = 1; d <= diasEnMes; d++) {
+      const fecha = fechaStr(año,mes,d);
+      const turno = proy[d-1];
+
+      if (turno === "L") currentByStaff[s.id].push(`largo_${fecha}`);
+      if (turno === "N") currentByStaff[s.id].push(`noche_${fecha}`);
+    }
+  });
+
+  originalByStaff = JSON.parse(JSON.stringify(currentByStaff));
+
+  renderCalendar({
+    status: "ok",
+    objective_value: 0,
+    solver_time_seconds: 0
+  });
+
+  showTab('resultado');
+}
 renderStaff();
 renderShifts();
 </script>
