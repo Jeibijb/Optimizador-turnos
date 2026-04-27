@@ -1116,7 +1116,7 @@ def optimize_schedule(
 
                 )
 
-                == shift_total_required(shift)
+                >= shift_total_required(shift)
 
             )
 
@@ -1192,7 +1192,7 @@ def optimize_schedule(
 
                 )
 
-                == int(shift.required_staff or 0)
+                >= int(shift.required_staff or 0)
 
             )
 
