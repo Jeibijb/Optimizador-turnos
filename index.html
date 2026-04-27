@@ -219,6 +219,25 @@ table.cal tr:hover td{background:#fafbff}
     <h2>Servicio ya en funcionamiento</h2>
 
     <div class="form-box">
+    <h3>Inicio del patrón</h3>
+
+    <label>Fecha real de inicio del ciclo</label>
+    <input type="date" id="pattern-start-date">
+
+    <label style="margin-top:10px">Día actual dentro del ciclo</label>
+    <select id="pattern-offset">
+      <option value="0">Día 1 (Largo)</option>
+      <option value="1">Día 2 (Noche)</option>
+      <option value="2">Día 3 (Libre)</option>
+      <option value="3">Día 4 (Libre)</option>
+    </select>
+
+    <p style="font-size:11px;color:#888;margin-top:4px">
+      Define desde cuándo empieza realmente el ciclo y en qué punto está hoy.
+    </p>
+  </div>
+    
+    <div class="form-box">
       <label>Número de turnos (grupos)</label>
       <input type="number" id="num-turnos-activos" value="4" min="1">
       <button class="btn btn-primary" onclick="generarTurnosActivos()" style="margin-top:10px">
@@ -819,6 +838,16 @@ function proyectarTurnosActivos(){
   const n = parseInt(document.getElementById('num-turnos-activos').value);
   const mes = parseInt(document.getElementById('t-mes').value);
   const año = parseInt(document.getElementById('t-año').value);
+
+  const startDateStr = document.getElementById('pattern-start-date').value;
+  if(!startDateStr){
+    alert("Debes ingresar la fecha de inicio del patrón");
+    return;
+  }
+
+  const offset = parseInt(document.getElementById('pattern-offset').value) || 0;
+
+  const startDate = new Date(startDateStr);
   const diasEnMes = new Date(año, mes, 0).getDate();
 
   const ciclo = ['L','N','O','O'];
@@ -833,8 +862,16 @@ function proyectarTurnosActivos(){
     personas.forEach(p=>{
       calendario[p] = [];
 
-      for(let d=0; d<diasEnMes; d++){
-        const estado = ciclo[(fase + d) % 4];
+      for(let d=1; d<=diasEnMes; d++){
+        const fechaActual = new Date(año, mes-1, d);
+
+        // 🔴 CLAVE: diferencia real de días desde el inicio
+        const diffDias = Math.floor((fechaActual - startDate) / (1000*60*60*24));
+
+        // 🔴 Ajuste por offset + fase del turno
+        const index = (diffDias + offset + fase) % 4;
+
+        const estado = ciclo[(index + 4) % 4]; // evita negativos
         calendario[p].push(estado);
       }
     });
@@ -842,7 +879,7 @@ function proyectarTurnosActivos(){
 
   renderProyeccion(calendario);
 }
-
+  
 function renderProyeccion(cal){
   const mes=parseInt(document.getElementById('t-mes').value);
   const año=parseInt(document.getElementById('t-año').value);
